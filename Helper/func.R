@@ -107,7 +107,8 @@ CalcDistance <- function(dataset, ori, tgt){
   
   pos_final <- cbind.data.frame(pos_end, pos_beg)
   pos_final$dist <- sqrt((pos_final$Y - pos_final$Y0)^2 + (pos_final$X - pos_final$X0)^2)
-  res <- pos_final[,c("CityId", "dist"), drop = FALSE]
+  pos_final$is_prime <- primes::is_prime(pos_final$CityId)
+  res <- pos_final[,c("CityId", "dist", "is_prime"), drop = FALSE]
   
   return(res)
 }
@@ -208,15 +209,21 @@ Algo1_MinDistPerStep <- function(dataset, from, to){
     
     # calculate distance of the tmp_cid
     tmp_dist <- CalcDistance(dataset, tmp_cid, unvisited)
-    if(i %% 10 == 0 & primes::is_prime(tmp_cid)){
-      tmp_dist <- tmp_dist * 1.1
+    if(i %% 10 == 0){
+      if(primes::is_prime(tmp_cid)){
+        tmp_dist$dist <- tmp_dist$dist * 1.1
+      }
     }
     
     # find shortest
     if((i+1) %% 10 == 0){
       # only go to prime in this case
-      tmp_dist <- tmp_dist %>% 
+      tmp_dist1 <- tmp_dist %>% 
         dplyr::filter(is_prime == TRUE)
+      
+      if(nrow(tmp_dist) != 0){
+        tmp_dist <- tmp_dist1
+      } 
     }
     shortest_dist <- tmp_dist[tmp_dist$dist == min(tmp_dist$dist), "dist"][1]
     tmp_cid <- tmp_dist[tmp_dist$dist == min(tmp_dist$dist), "CityId"][1]
