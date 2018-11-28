@@ -35,4 +35,6 @@ options(scipen = 999)
 # load data
 city_coords <- read.csv("Source Data/cities.csv")
 city_coords_ss <- city_coords[1:5, ]
-shortest_dist <- ModDijkstra(city_coords_ss, 0, 5)
+shortest_dist <- Algo1_MinDistPerStep(city_coords, 0, nrow(city_coords) - 1)
+shortest_dist <- shortest_dist[order(shortest_dist$visit_step),]
+write.csv(shortest_dist, file = "Submission/path.csv")

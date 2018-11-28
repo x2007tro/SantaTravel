@@ -112,7 +112,7 @@ CalcDistance <- function(dataset, ori, tgt){
   return(res)
 }
 
-# find shortest path
+# find shortest path algo 1
 ModDijkstra <- function(dataset, from, to){
   
   # preparation
@@ -128,7 +128,7 @@ ModDijkstra <- function(dataset, from, to){
   
   # start the algo
   i <- 1
-  while(length(unvisited) > 0){
+  while(length(unvisited) > 1){
     # determine mini distance
     min_dist <- min(track_record[track_record$CityId %in% unvisited, "shortest_dist"])
     
@@ -143,7 +143,7 @@ ModDijkstra <- function(dataset, from, to){
     unvisited <- unvisited[!(unvisited %in% tmp_id)]
     
     # calculate distance of the tmp_id
-    tmp_dist <- CalcDistance(dataset, tmp_id, track_record$CityId[!(track_record$CityId %in% tmp_id)])
+    tmp_dist <- CalcDistance(dataset, tmp_id, unvisited)
     tmp_dist <- tmp_dist %>% 
       dplyr::mutate(dist = dist + min_dist)
     
@@ -177,4 +177,58 @@ ModDijkstra <- function(dataset, from, to){
   }
   
   return(track_record)
+}
+
+# find shortest path algo 2
+Algo1_MinDistPerStep <- function(dataset, from, to){
+  
+  # preparation
+  visited <- c()
+  unvisited <- dataset$CityId
+  track_record <- data.frame(
+    CityId = unvisited,
+    shortest_dist = 1000000,
+    visit_step = 0,
+    is_prime = primes::is_prime(unvisited),
+    stringsAsFactors = FALSE
+  )
+  track_record[track_record$CityId == 0, "shortest_dist"] <- 0
+  tmp_cid <- 0
+
+  # start the algo
+  i <- 1
+  while(length(unvisited) > 1){
+    print(i)
+    
+    # add CityId to the visited list
+    visited <- c(visited, tmp_cid)
+    
+    # remove CityId from the unvisited list
+    unvisited <- unvisited[!(unvisited %in% tmp_cid)]
+    
+    # calculate distance of the tmp_cid
+    tmp_dist <- CalcDistance(dataset, tmp_cid, unvisited)
+    if(i %% 10 == 0 & primes::is_prime(tmp_cid)){
+      tmp_dist <- tmp_dist * 1.1
+    }
+    
+    # find shortest
+    if((i+1) %% 10 == 0){
+      # only go to prime in this case
+      tmp_dist <- tmp_dist %>% 
+        dplyr::filter(is_prime == TRUE)
+    }
+    shortest_dist <- tmp_dist[tmp_dist$dist == min(tmp_dist$dist), "dist"][1]
+    tmp_cid <- tmp_dist[tmp_dist$dist == min(tmp_dist$dist), "CityId"][1]
+    
+    # update track record
+    track_record[track_record$CityId == tmp_cid, "visit_step"] <- i
+    track_record[track_record$CityId == tmp_cid, "shortest_dist"] <- shortest_dist
+
+    # update step
+    i <- i + 1
+  }
+  
+  return(track_record)
+  
 }
